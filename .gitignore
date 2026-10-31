@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-server/
+.env
+.env.*
+!.env.example
+firebase-service-account.json
+*-service-account*.json
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.tsbuildinfo
+.DS_Store

@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow create: if isOwner(uid)
+        && request.resource.data.uid == uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == 'user';
+      allow read: if isOwner(uid);
+      allow update: if isOwner(uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fullName', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // The backend uses Firebase Admin SDK to write scans. Admin SDK bypasses
+    // these rules, so backend authorization and ownership checks remain required.
+    match /scan_history/{scanId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /security_alerts/{alertId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /user_settings/{uid} {
+      allow read, create, update: if isOwner(uid);
+      allow delete: if false;
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
